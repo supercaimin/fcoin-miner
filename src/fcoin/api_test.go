@@ -52,3 +52,11 @@ func TestQueryOrders(t *testing.T) {
 	}
 	fmt.Println(data)
 }
+
+func TestGetTicker(t *testing.T) {
+	data, err := ApiInstance.GetTicker("fjusdt")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(data)
+}

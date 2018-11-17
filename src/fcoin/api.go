@@ -58,7 +58,7 @@ func (h *HttpHelper) signature(method string) string {
 }
 
 func (h *HttpHelper) generateSortedParamsString() string {
-	if h.params == nil && len(h.params) == 0 {
+	if h.params == nil || len(h.params) == 0 {
 		return ""
 	}
 	var keys []string
@@ -151,29 +151,25 @@ type FCoinApi struct {
 //此 API 用于获取服务器时间。
 func (api *FCoinApi) GetServerTime() (interface{}, error) {
 	helper := NewHttpHelper("public/server-time", nil)
-	data, err := helper.Get()
-	return data, err
+	return helper.Get()
 }
 
 //此 API 用于获取可用币种。
 func (api *FCoinApi) GetCurrencies() (interface{}, error) {
 	helper := NewHttpHelper("public/currencies", nil)
-	data, err := helper.Get()
-	return data, err
+	return helper.Get()
 }
 
 //此 API 用于获取可用交易对。
 func (api *FCoinApi) GetSymbols() (interface{}, error) {
 	helper := NewHttpHelper("public/symbols", nil)
-	data, err := helper.Get()
-	return data, err
+	return helper.Get()
 }
 
 //此 API 用于查询用户的资产列表。
 func (api *FCoinApi) GetBalance() (interface{}, error) {
 	helper := NewHttpHelper("accounts/balance", nil)
-	data, err := helper.Get()
-	return data, err
+	return helper.Get()
 }
 
 //此 API 用于创建新的订单。
@@ -187,8 +183,7 @@ func (api *FCoinApi) CreateOrder(symbol, side, etype, price, amount, exchange st
 		"exchange": exchange,
 	}
 	helper := NewHttpHelper("orders", params)
-	data, err := helper.Post()
-	return data, err
+	return helper.Post()
 }
 
 //此 API 用于查询订单列表。
@@ -207,29 +202,32 @@ func (api *FCoinApi) QueryOrders(symbol string, states string, before int64, aft
 		params["limt"] = strconv.Itoa(limt)
 	}
 	helper := NewHttpHelper("orders", params)
-	data, err := helper.Get()
-	return data, err
+	return helper.Get()
 }
 
 //此 API 用于返回指定的订单详情。
 func (api *FCoinApi) GetOrder(orderId string) (interface{}, error) {
 	helper := NewHttpHelper("orders/"+orderId, nil)
-	data, err := helper.Get()
-	return data, err
+	return helper.Get()
 }
 
-//此 API 用于撤销指定订单，订单撤销过程是异步的，即此 API 的调用成功代表着订单已经进入撤销申请的过程，需要等待撮合的进一步处理，才能进行订单的撤销确认。
+//此 API 用于撤销指定订单，订单撤销过程是异步的，即此 API 的调用成功代表着订单已经进入撤销申请的过程，
+//需要等待撮合的进一步处理，才能进行订单的撤销确认。
 func (api *FCoinApi) CancelOrder(orderId string) (interface{}, error) {
 	helper := NewHttpHelper("orders/"+orderId+"/submit-cancel", nil)
-	data, err := helper.Get()
-	return data, err
+	return helper.Get()
 }
 
 //此 API 用于获取指定订单的成交记录
 func (api *FCoinApi) GetOrderMatchResults(orderId string) (interface{}, error) {
 	helper := NewHttpHelper("orders/"+orderId+"/match-results", nil)
-	data, err := helper.Get()
-	return data, err
+	return helper.Get()
+}
+
+//此 API 用于获取指定订单的成交记录
+func (api *FCoinApi) GetTicker(symbol string) (interface{}, error) {
+	helper := NewHttpHelper("market/ticker/"+symbol, nil)
+	return helper.Get()
 }
 
 var ApiInstance *FCoinApi
