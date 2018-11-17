@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -25,7 +24,7 @@ type HttpHelper struct {
 //
 func NewHttpHelper(uri string, params map[string]string) *HttpHelper {
 	t := time.Now()
-	fmt.Println(t.Unix())
+	//fmt.Println(t.Unix())
 	return &HttpHelper{uri: uri, params: params, timestamp: strconv.FormatInt(t.Unix()*1000, 10)}
 }
 
@@ -45,7 +44,7 @@ func (h *HttpHelper) signature(method string) string {
 		signedBuffer.WriteString(h.timestamp)
 		signedBuffer.WriteString(h.generateSortedParamsString())
 	}
-	log.Println(signedBuffer.String())
+	//log.Println(signedBuffer.String())
 
 	sign := base64.StdEncoding.EncodeToString(signedBuffer.Bytes())
 	mac := hmac.New(sha1.New, []byte(API_SECRET))
@@ -53,7 +52,7 @@ func (h *HttpHelper) signature(method string) string {
 	sum := mac.Sum(nil)
 
 	s := base64.StdEncoding.EncodeToString(sum)
-	log.Println(s)
+	//log.Println(s)
 	return s
 }
 
@@ -88,6 +87,7 @@ func (h *HttpHelper) Get() (interface{}, error) {
 		urlBuffer.WriteString("?")
 		urlBuffer.WriteString(h.generateSortedParamsString())
 	}
+	fmt.Println(urlBuffer.String())
 
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, urlBuffer.String(), nil)
@@ -118,7 +118,7 @@ func (h *HttpHelper) Post() (interface{}, error) {
 	var urlBuffer bytes.Buffer
 	urlBuffer.WriteString(API_URL)
 	urlBuffer.WriteString(h.uri)
-
+	fmt.Println(urlBuffer.String())
 	client := &http.Client{}
 	postData, _ := json.Marshal(h.params)
 	req, err := http.NewRequest(http.MethodPost, urlBuffer.String(), strings.NewReader(string(postData)))
@@ -130,13 +130,14 @@ func (h *HttpHelper) Post() (interface{}, error) {
 	req.Header.Add("FC-ACCESS-KEY", API_KEY)
 	req.Header.Add("FC-ACCESS-SIGNATURE", h.signature(http.MethodPost))
 	req.Header.Add("FC-ACCESS-TIMESTAMP", h.timestamp)
-	fmt.Println(h.timestamp)
+	//fmt.Println(h.timestamp)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
 	var data interface{}
 	e := json.Unmarshal(body, &data)
 	if e != nil {
@@ -215,7 +216,7 @@ func (api *FCoinApi) GetOrder(orderId string) (interface{}, error) {
 //需要等待撮合的进一步处理，才能进行订单的撤销确认。
 func (api *FCoinApi) CancelOrder(orderId string) (interface{}, error) {
 	helper := NewHttpHelper("orders/"+orderId+"/submit-cancel", nil)
-	return helper.Get()
+	return helper.Post()
 }
 
 //此 API 用于获取指定订单的成交记录

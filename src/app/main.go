@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	FCoinMiner.Work()
+	FCoinMiner.Start()
 }

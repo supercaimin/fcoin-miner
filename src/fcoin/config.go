@@ -7,7 +7,13 @@ const API_SECRET = "705e1b70adb04711a13db6dd765ce50f"
 
 const WSS_URL = "wss://api.fcoin.com/v2/ws"
 
-const TARGET_SYMBOL_IN = "btc"
+const TARGET_SYMBOL_IN = "fj"
 const TARGET_SYMBOL_OUT = "usdt"
 
 const LEVEL = MinerNormalLevel
+
+// 差价
+const PRICE_DEFF = 0.000001
+
+// 单笔订单购买数量
+const PER_ORDER_AMOUNT = 10
