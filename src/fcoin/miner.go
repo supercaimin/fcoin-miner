@@ -8,11 +8,10 @@ import (
 )
 
 const (
-	MinerNormalMode       = 0 // 同样价格买入卖出
-	MinerConservatismMode = 1 // 低买、高卖
-	MinerRadicalMode      = 2 // 高买、低卖
-	MinerFastMode         = 3 // 同时小买单、卖单无矿损
-
+	MinerNormalMode       = 0 // 同样价格买入卖出，无矿损，挖坑效率中性
+	MinerConservatismMode = 1 // 低买、高卖，无矿损，相同本金挖矿最多，但效率低下
+	MinerRadicalMode      = 2 // 高买、低卖，有矿损，挖矿效率最高
+	MinerFastMode         = 3 // 同时下买单、卖单无矿损，挖矿效率极高，推荐模式
 )
 
 type Miner struct {
@@ -116,12 +115,12 @@ func (m *Miner) checkOrderState(orderId string) bool {
 	mmdata := mdata["data"].(map[string]interface{})
 	state := mmdata["state"].(string)
 	if state != "filled" {
-		if m.checkStateRetryCnt == 3 {
+		if m.checkStateRetryCnt == 0 {
 			ApiInstance.CancelOrder(orderId)
 			fmt.Println("订单" + orderId + "未成交，已取消")
 			return false
 		}
-		m.checkStateRetryCnt++
+		m.checkStateRetryCnt--
 		m.checkOrderState(orderId)
 	}
 	return true
@@ -131,7 +130,7 @@ func (m *Miner) goWorker(atype string) {
 	m.updateBalance()
 	m.calculatePrice(atype)
 	orderId := m.order(atype)
-	m.checkStateRetryCnt = 0
+	m.checkStateRetryCnt = 3
 	if m.checkOrderState(orderId) {
 		fmt.Println("订单" + orderId + "已成交！")
 		if atype == "buy" {
@@ -149,7 +148,6 @@ func (m *Miner) fastWorker(atype string) {
 	m.updateBalance()
 	m.calculatePrice(atype)
 	orderId := m.order(atype)
-	m.checkStateRetryCnt = 0
 	m.checkOrderState(orderId)
 	m.wg.Done()
 }
@@ -157,6 +155,7 @@ func (m *Miner) Start() {
 	if MINER_MODE == MinerFastMode {
 		for {
 			m.wg.Add(2)
+			m.checkStateRetryCnt = 6
 			go m.fastWorker("buy")
 			go m.fastWorker("sell")
 			m.wg.Wait()
