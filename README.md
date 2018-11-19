@@ -78,3 +78,5 @@ https://api.fcoinjp.com/v2/accounts/balance
 ```
 
 挖矿开始
+
+若有疑问请加微信：261029366
