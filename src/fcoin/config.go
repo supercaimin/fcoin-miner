@@ -10,7 +10,7 @@ const WSS_URL = "wss://api.fcoin.com/v2/ws"
 const TARGET_SYMBOL_IN = "fj"
 const TARGET_SYMBOL_OUT = "usdt"
 
-const LEVEL = MinerNormalLevel
+const MINER_MODE = MinerFastMode
 
 // 差价
 const PRICE_DEFF = 0.000001

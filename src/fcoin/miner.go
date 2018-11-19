@@ -8,14 +8,16 @@ import (
 )
 
 const (
-	MinerNormalLevel       = 0 // 同样价格买入卖出
-	MinerConservatismLevel = 1 // 低买、高卖
-	MinerRadicalLevel      = 2 // 高买、低卖
+	MinerNormalMode       = 0 // 同样价格买入卖出
+	MinerConservatismMode = 1 // 低买、高卖
+	MinerRadicalMode      = 2 // 高买、低卖
+	MinerFastMode         = 3 // 同时小买单、卖单无矿损
+
 )
 
 type Miner struct {
 	wg                 sync.WaitGroup
-	Level              int
+	Mode               int
 	symbol             string
 	inBalance          float64
 	outBalance         float64
@@ -25,17 +27,9 @@ type Miner struct {
 
 func NewMiner() *Miner {
 	m := new(Miner)
-	m.Level = LEVEL
+	m.Mode = MINER_MODE
 	m.symbol = TARGET_SYMBOL_IN + TARGET_SYMBOL_OUT
 	return m
-}
-
-func (m *Miner) buy() {
-	m.wg.Done()
-}
-
-func (m *Miner) sell() {
-	m.wg.Done()
 }
 
 // 更新账号余额
@@ -54,8 +48,8 @@ func (m *Miner) updateBalance() {
 	}
 }
 
-// 更新当前成交价格
-func (m *Miner) updatePrice() {
+// 计算当前成交价格
+func (m *Miner) calculatePrice(otype string) {
 	data, _ := ApiInstance.GetTicker(m.symbol)
 	mdata := data.(map[string]interface{})
 	mmdata := mdata["data"].(map[string]interface{})
@@ -63,16 +57,16 @@ func (m *Miner) updatePrice() {
 	values := ticker.([]interface{})
 	m.price, _ = values[0].(float64)
 	fmt.Println("Origin Price:", m.price)
-}
-
-func (m *Miner) order(otype string) string {
 	var price float64 = m.price
 	if otype == "buy" {
-		if m.Level == MinerRadicalLevel {
+		if m.Mode == MinerRadicalMode {
 			price = m.price + PRICE_DEFF
 		}
-		if m.Level == MinerConservatismLevel {
+		if m.Mode == MinerConservatismMode {
 			price = m.price - PRICE_DEFF
+		}
+		if m.Mode == MinerFastMode {
+			price = m.price + PRICE_DEFF
 		}
 		if m.outBalance < PER_ORDER_AMOUNT*price {
 			panic(TARGET_SYMBOL_OUT + "余额不足")
@@ -81,20 +75,26 @@ func (m *Miner) order(otype string) string {
 	}
 
 	if otype == "sell" {
-		if m.Level == MinerRadicalLevel {
+		if m.Mode == MinerRadicalMode {
 			price = m.price - PRICE_DEFF
 		}
-		if m.Level == MinerConservatismLevel {
+		if m.Mode == MinerConservatismMode {
 			price = m.price + PRICE_DEFF
 		}
-
+		if m.Mode == MinerFastMode {
+			price = m.price + PRICE_DEFF
+		}
 		if m.inBalance < PER_ORDER_AMOUNT*price {
 			panic(TARGET_SYMBOL_IN + "余额不足")
 		}
 	}
+	m.price = price
+}
+
+func (m *Miner) order(otype string) string {
 	fmt.Println("下" + otype + "单！")
-	fmt.Println("价格:", price)
-	data, err := ApiInstance.CreateOrder(m.symbol, otype, "limit", strconv.FormatFloat(price, 'f', 6, 64), strconv.FormatInt(PER_ORDER_AMOUNT, 10), "main")
+	fmt.Println("价格:", m.price)
+	data, err := ApiInstance.CreateOrder(m.symbol, otype, "limit", strconv.FormatFloat(m.price, 'f', 6, 64), strconv.FormatInt(PER_ORDER_AMOUNT, 10), "main")
 	if err != nil {
 		fmt.Println("订单提交失败:", err)
 	}
@@ -129,7 +129,7 @@ func (m *Miner) checkOrderState(orderId string) bool {
 
 func (m *Miner) goWorker(atype string) {
 	m.updateBalance()
-	m.updatePrice()
+	m.calculatePrice(atype)
 	orderId := m.order(atype)
 	m.checkStateRetryCnt = 0
 	if m.checkOrderState(orderId) {
@@ -144,8 +144,26 @@ func (m *Miner) goWorker(atype string) {
 	}
 }
 
+// 快速挖矿模式
+func (m *Miner) fastWorker(atype string) {
+	m.updateBalance()
+	m.calculatePrice(atype)
+	orderId := m.order(atype)
+	m.checkStateRetryCnt = 0
+	m.checkOrderState(orderId)
+	m.wg.Done()
+}
 func (m *Miner) Start() {
-	m.goWorker("buy")
+	if MINER_MODE == MinerFastMode {
+		for {
+			m.wg.Add(2)
+			go m.fastWorker("buy")
+			go m.fastWorker("sell")
+			m.wg.Wait()
+		}
+	} else {
+		m.goWorker("buy")
+	}
 }
 
 var FCoinMiner *Miner
