@@ -60,3 +60,11 @@ func TestGetTicker(t *testing.T) {
 	}
 	fmt.Println(data)
 }
+
+func TestCancelOrder(t *testing.T) {
+	data, err := ApiInstance.CancelOrder("-xboyAImrqpKd51gVovH3LgFeClNTDtainwPI1_v138=")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(data)
+}

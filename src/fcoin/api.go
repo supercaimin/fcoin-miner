@@ -215,7 +215,10 @@ func (api *FCoinApi) GetOrder(orderId string) (interface{}, error) {
 //此 API 用于撤销指定订单，订单撤销过程是异步的，即此 API 的调用成功代表着订单已经进入撤销申请的过程，
 //需要等待撮合的进一步处理，才能进行订单的撤销确认。
 func (api *FCoinApi) CancelOrder(orderId string) (interface{}, error) {
-	helper := NewHttpHelper("orders/"+orderId+"/submit-cancel", nil)
+	params := map[string]string{
+		"order_id": orderId,
+	}
+	helper := NewHttpHelper("orders/"+orderId+"/submit-cancel", params)
 	return helper.Post()
 }
 
